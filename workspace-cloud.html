@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Workspace</title>
+<style>
+  :root {
+    --bg: #f7f6f3;
+    --sidebar-bg: #ffffff;
+    --card: #ffffff;
+    --border: #e6e4dd;
+    --text: #2c2c2a;
+    --text-secondary: #6b6a65;
+    --green: #3b6d11;
+    --green-bg: #eaf3de;
+    --red: #a32d2d;
+    --red-bg: #fcebeb;
+    --accent: #185fa5;
+    --accent-bg: #e6f1fb;
+    --hover: #efeee8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .app { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    padding: 1rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin: 0 0 8px 6px; }
+  .page-list { display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; }
+  .page-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 8px; border-radius: 6px; cursor: pointer;
+    font-size: 14px; color: var(--text-secondary);
+  }
+  .page-item:hover { background: var(--hover); }
+  .page-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+  .page-title-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .page-delete {
+    border: none; background: none; color: var(--text-secondary);
+    font-size: 14px; cursor: pointer; padding: 2px 4px; opacity: 0; flex-shrink: 0;
+  }
+  .page-item:hover .page-delete { opacity: 1; }
+  .page-delete:hover { color: var(--red); }
+  .add-page-btn {
+    margin-top: 8px; border: none; background: none; color: var(--text-secondary);
+    font-size: 14px; text-align: left; padding: 7px 8px; border-radius: 6px; cursor: pointer;
+  }
+  .add-page-btn:hover { background: var(--hover); }
+
+  .export-panel { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .export-panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin: 0 0 8px 6px; }
+  .export-label { font-size: 12px; color: var(--text-secondary); display: block; margin: 6px 6px 3px; }
+  .export-panel input[type="date"] {
+    width: 100%; padding: 6px 8px; font-size: 12px; margin-bottom: 4px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text);
+  }
+  .export-btn { width: 100%; margin-top: 8px; font-size: 13px; }
+  .backup-row { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+
+  .main { flex: 1; padding: 2.5rem 3rem; max-width: 760px; }
+  .page-title-input {
+    font-size: 28px; font-weight: 600; border: none; background: none;
+    width: 100%; padding: 0; margin-bottom: 0.5rem; color: var(--text); font-family: inherit;
+  }
+  .page-title-input:focus { outline: none; }
+  .page-notes {
+    width: 100%; border: none; background: none; resize: vertical;
+    font-size: 14px; color: var(--text-secondary); font-family: inherit;
+    padding: 0; margin-bottom: 1.5rem; min-height: 24px;
+  }
+  .page-notes:focus { outline: none; }
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin: 1.5rem 0 8px; }
+
+  .add-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+  input[type="text"], textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--card);
+    color: var(--text);
+  }
+  button {
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  button:hover { background: var(--hover); }
+  button.primary { background: var(--text); color: #fff; border-color: var(--text); }
+  button.primary:hover { background: #444441; }
+
+  .filters { display: flex; gap: 6px; margin-bottom: 1rem; }
+  .filters button { padding: 5px 12px; font-size: 12px; border-radius: 20px; }
+  .filters button.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .task { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .task-main { display: flex; align-items: flex-start; gap: 10px; }
+  .task-text { flex: 1; font-size: 14px; word-break: break-word; }
+  .task-text.done { text-decoration: line-through; color: var(--green); }
+  .task-text.removed { text-decoration: line-through; color: var(--red); }
+  .task-meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+  .task-note { font-size: 12px; color: var(--text-secondary); margin-top: 6px; white-space: pre-wrap; word-break: break-word; }
+  .task-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .task-actions button { padding: 5px 10px; font-size: 12px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 6px; flex-shrink: 0; }
+  .badge.done { background: var(--green-bg); color: var(--green); }
+  .badge.removed { background: var(--red-bg); color: var(--red); }
+  .empty { text-align: center; color: var(--text-secondary); font-size: 13px; padding: 2rem 0; }
+  .status-line { font-size: 12px; color: var(--text-secondary); margin-top: 1rem; min-height: 16px; }
+  .error { color: var(--red); font-size: 12px; margin-top: 4px; }
+
+  .subtasks { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .subtask { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; }
+  .subtask input[type="checkbox"] { width: 15px; height: 15px; flex-shrink: 0; }
+  .subtask-text { flex: 1; word-break: break-word; }
+  .subtask-text.done { text-decoration: line-through; color: var(--green); }
+  .subtask-delete { border: none; background: none; color: var(--text-secondary); font-size: 15px; padding: 0 4px; cursor: pointer; }
+  .subtask-delete:hover { color: var(--red); }
+  .subtask-progress { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+  .add-subtask-row { display: flex; gap: 6px; margin-top: 6px; }
+  .add-subtask-row input { padding: 6px 8px; font-size: 12px; }
+  .add-subtask-row button { padding: 6px 10px; font-size: 12px; }
+  .toggle-link { font-size: 12px; color: var(--accent); background: none; border: none; padding: 4px 0; text-decoration: underline; cursor: pointer; }
+
+  @media (max-width: 700px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; overflow-x: auto; }
+    .page-list { flex-direction: row; }
+    .main { padding: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <h2>Pages</h2>
+    <div class="page-list" id="page-list"></div>
+    <button class="add-page-btn" id="add-page-btn">+ New page</button>
+
+    <div class="export-panel">
+      <h2>Export</h2>
+      <label class="export-label" for="export-from">From</label>
+      <input type="date" id="export-from" />
+      <label class="export-label" for="export-to">To</label>
+      <input type="date" id="export-to" />
+      <button id="export-btn" class="export-btn">Export as PDF</button>
+      <div id="export-error" class="error"></div>
+
+      <div class="backup-row">
+        <button id="backup-btn" class="export-btn">Download backup (.json)</button>
+        <button id="restore-btn" class="export-btn">Restore from backup</button>
+        <input type="file" id="restore-input" accept="application/json" style="display:none" />
+      </div>
+      <div id="backup-error" class="error"></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <input type="text" class="page-title-input" id="page-title" placeholder="Untitled" />
+    <textarea class="page-notes" id="page-notes" placeholder="Add a description for this page..." rows="1"></textarea>
+
+    <div class="section-label">Checklist</div>
+    <div class="add-row">
+      <input type="text" id="new-task" placeholder="Add a task" />
+      <button class="primary" id="add-btn">Add</button>
+    </div>
+    <div id="add-error" class="error"></div>
+
+    <div class="filters">
+      <button data-filter="all" class="active">All</button>
+      <button data-filter="active">Active</button>
+      <button data-filter="done">Done</button>
+      <button data-filter="removed">Removed</button>
+    </div>
+
+    <div class="list" id="list"></div>
+    <div class="status-line" id="status"></div>
+  </div>
+</div>
+
+<script>
+let data = { pages: [], activePageId: null };
+let currentFilter = 'all';
+let expanded = {};
+
+const pageListEl = document.getElementById('page-list');
+const pageTitleEl = document.getElementById('page-title');
+const pageNotesEl = document.getElementById('page-notes');
+const listEl = document.getElementById('list');
+const statusEl = document.getElementById('status');
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function activePage() {
+  return data.pages.find(p => p.id === data.activePageId);
+}
+
+const API_BASE = 'https://phd-workspace-backend-3s0r.onrender.com';
+const API_KEY = 'saahithisagoodboy';
+
+async function loadData() {
+  try {
+    const res = await fetch(`${API_BASE}/api/data`, {
+      headers: { 'x-api-key': API_KEY }
+    });
+    if (!res.ok) throw new Error('Request failed: ' + res.status);
+    data = await res.json();
+  } catch (e) {
+    console.error(e);
+    statusEl.textContent = 'Could not reach the server. Check your connection.';
+    data = { pages: [], activePageId: null };
+  }
+  ensureDefaultPage();
+  renderAll();
+}
+
+async function saveData() {
+  try {
+    const res = await fetch(`${API_BASE}/api/data`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Request failed: ' + res.status);
+    statusEl.textContent = 'Saved';
+    setTimeout(() => { if (statusEl.textContent === 'Saved') statusEl.textContent = ''; }, 1200);
+  } catch (e) {
+    console.error(e);
+    statusEl.textContent = 'Could not save. Check your connection.';
+  }
+}
+
+function ensureDefaultPage() {
+  if (!data.pages || data.pages.length === 0) {
+    const id = uid();
+    data.pages = [{ id, title: 'Getting started', pageNotes: '', tasks: [] }];
+    data.activePageId = id;
+  }
+  if (!data.activePageId || !activePage()) {
+    data.activePageId = data.pages[0].id;
+  }
+}
+
+function renderSidebar() {
+  pageListEl.innerHTML = data.pages.map(p => `
+    <div class="page-item ${p.id === data.activePageId ? 'active' : ''}" data-id="${p.id}">
+      <span class="page-title-text">${escapeHtml(p.title || 'Untitled')}</span>
+      <button class="page-delete" data-action="delete-page" data-id="${p.id}" aria-label="Delete page">×</button>
+    </div>
+  `).join('');
+}
+
+function renderMain() {
+  const page = activePage();
+  if (!page) return;
+  pageTitleEl.value = page.title;
+  pageNotesEl.value = page.pageNotes || '';
+  renderTasks();
+}
+
+function renderTasks() {
+  const page = activePage();
+  if (!page) return;
+  const tasks = page.tasks || [];
+  const filtered = tasks.filter(t => currentFilter === 'all' ? true : t.status === currentFilter);
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="empty">No tasks here yet.</div>';
+    return;
+  }
+  listEl.innerHTML = filtered.map(t => {
+    const textClass = t.status === 'done' ? 'done' : t.status === 'removed' ? 'removed' : '';
+    const badge = t.status === 'done'
+      ? '<span class="badge done">Done</span>'
+      : t.status === 'removed'
+        ? '<span class="badge removed">Removed</span>'
+        : '';
+    const meta = t.status === 'done' && t.completedAt
+      ? `<div class="task-meta">Completed ${formatDate(t.completedAt)}</div>`
+      : t.status === 'removed' && t.removedAt
+        ? `<div class="task-meta">Removed ${formatDate(t.removedAt)}</div>`
+        : '';
+    const noteHtml = t.note ? `<div class="task-note">${escapeHtml(t.note)}</div>` : '';
+
+    const subtasks = t.subtasks || [];
+    const doneCount = subtasks.filter(s => s.done).length;
+    const isOpen = !!expanded[t.id];
+    const subtaskProgress = subtasks.length ? `<div class="subtask-progress">${doneCount}/${subtasks.length} subtasks done</div>` : '';
+    const subtasksListHtml = subtasks.map(s => `
+      <div class="subtask">
+        <input type="checkbox" ${s.done ? 'checked' : ''} data-action="toggle-subtask" data-id="${t.id}" data-sub="${s.id}" />
+        <span class="subtask-text ${s.done ? 'done' : ''}">${escapeHtml(s.text)}</span>
+        <button class="subtask-delete" data-action="edit-subtask" data-id="${t.id}" data-sub="${s.id}" aria-label="Edit subtask">✎</button>
+        <button class="subtask-delete" data-action="delete-subtask" data-id="${t.id}" data-sub="${s.id}" aria-label="Delete subtask">×</button>
+      </div>
+    `).join('');
+    const subtasksBlock = isOpen ? `
+      <div class="subtasks">
+        ${subtaskProgress}
+        ${subtasksListHtml}
+        <div class="add-subtask-row">
+          <input type="text" class="subtask-input" data-id="${t.id}" placeholder="Add subtask" />
+          <button data-action="add-subtask" data-id="${t.id}">Add</button>
+        </div>
+      </div>
+    ` : (subtasks.length ? `<div class="subtasks">${subtaskProgress}</div>` : '');
+
+    let actions = '';
+    if (t.status === 'active') {
+      actions = `
+        <button data-action="edit" data-id="${t.id}">Edit</button>
+        <button data-action="done" data-id="${t.id}">Mark done</button>
+        <button data-action="removed" data-id="${t.id}">Mark removed</button>
+        <button data-action="note" data-id="${t.id}">${t.note ? 'Edit note' : 'Add note'}</button>
+        <button data-action="delete" data-id="${t.id}">Delete</button>
+      `;
+    } else {
+      actions = `
+        <button data-action="edit" data-id="${t.id}">Edit</button>
+        <button data-action="restore" data-id="${t.id}">Restore</button>
+        <button data-action="delete" data-id="${t.id}">Delete</button>
+      `;
+    }
+    const toggleLink = `<button class="toggle-link" data-action="toggle-expand" data-id="${t.id}">${isOpen ? 'Hide subtasks' : (subtasks.length ? 'Show subtasks' : 'Add subtasks')}</button>`;
+
+    return `
+      <div class="task">
+        <div class="task-main">
+          <div class="task-text ${textClass}">${escapeHtml(t.text)}</div>
+          ${badge}
+        </div>
+        ${meta}
+        ${noteHtml}
+        ${toggleLink}
+        ${subtasksBlock}
+        <div class="task-actions">${actions}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function renderAll() {
+  renderSidebar();
+  renderMain();
+}
+
+pageListEl.addEventListener('click', e => {
+  const delBtn = e.target.closest('button[data-action="delete-page"]');
+  if (delBtn) {
+    const id = delBtn.dataset.id;
+    if (data.pages.length <= 1) {
+      statusEl.textContent = 'You need at least one page';
+      setTimeout(() => statusEl.textContent = '', 1500);
+      return;
+    }
+    data.pages = data.pages.filter(p => p.id !== id);
+    if (data.activePageId === id) data.activePageId = data.pages[0].id;
+    saveData();
+    renderAll();
+    return;
+  }
+  const item = e.target.closest('.page-item');
+  if (item) {
+    data.activePageId = item.dataset.id;
+    currentFilter = 'all';
+    document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filters button[data-filter="all"]').classList.add('active');
+    renderAll();
+  }
+});
+
+document.getElementById('add-page-btn').addEventListener('click', () => {
+  const id = uid();
+  data.pages.push({ id, title: 'Untitled', pageNotes: '', tasks: [] });
+  data.activePageId = id;
+  saveData();
+  renderAll();
+  pageTitleEl.focus();
+  pageTitleEl.select();
+});
+
+pageTitleEl.addEventListener('input', () => {
+  const page = activePage();
+  if (!page) return;
+  page.title = pageTitleEl.value;
+  renderSidebar();
+  saveData();
+});
+
+pageNotesEl.addEventListener('input', () => {
+  const page = activePage();
+  if (!page) return;
+  page.pageNotes = pageNotesEl.value;
+  saveData();
+});
+
+document.getElementById('add-btn').addEventListener('click', addTask);
+document.getElementById('new-task').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+function addTask() {
+  const page = activePage();
+  if (!page) return;
+  const input = document.getElementById('new-task');
+  const val = input.value.trim();
+  const errorEl = document.getElementById('add-error');
+  if (!val) {
+    errorEl.textContent = 'Enter a task first';
+    return;
+  }
+  errorEl.textContent = '';
+  page.tasks.unshift({ id: uid(), text: val, note: '', status: 'active', subtasks: [], createdAt: new Date().toISOString(), completedAt: null, removedAt: null });
+  input.value = '';
+  saveData();
+  renderTasks();
+}
+
+listEl.addEventListener('click', e => {
+  const page = activePage();
+  if (!page) return;
+  const btn = e.target.closest('button');
+  if (btn) {
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+    const task = page.tasks.find(t => t.id === id);
+    if (!task) return;
+
+    if (action === 'edit') {
+      const newText = prompt('Edit task:', task.text);
+      if (newText !== null && newText.trim()) task.text = newText.trim();
+    } else if (action === 'done') {
+      task.status = 'done';
+      task.completedAt = new Date().toISOString();
+    } else if (action === 'removed') {
+      task.status = 'removed';
+      task.removedAt = new Date().toISOString();
+    } else if (action === 'restore') {
+      task.status = 'active';
+      task.completedAt = null;
+      task.removedAt = null;
+    } else if (action === 'delete') {
+      page.tasks = page.tasks.filter(t => t.id !== id);
+      delete expanded[id];
+    } else if (action === 'note') {
+      const newNote = prompt('Private note for this task:', task.note || '');
+      if (newNote !== null) task.note = newNote.trim();
+    } else if (action === 'toggle-expand') {
+      expanded[id] = !expanded[id];
+      renderTasks();
+      return;
+    } else if (action === 'add-subtask') {
+      const inputEl = listEl.querySelector(`.subtask-input[data-id="${id}"]`);
+      const text = inputEl.value.trim();
+      if (!text) return;
+      task.subtasks = task.subtasks || [];
+      task.subtasks.push({ id: uid(), text, done: false });
+      expanded[id] = true;
+    } else if (action === 'edit-subtask') {
+      const subId = btn.dataset.sub;
+      const sub = (task.subtasks || []).find(s => s.id === subId);
+      if (sub) {
+        const newText = prompt('Edit subtask:', sub.text);
+        if (newText !== null && newText.trim()) sub.text = newText.trim();
+      }
+    } else if (action === 'delete-subtask') {
+      const subId = btn.dataset.sub;
+      task.subtasks = (task.subtasks || []).filter(s => s.id !== subId);
+    }
+    saveData();
+    renderTasks();
+    return;
+  }
+
+  const checkbox = e.target.closest('input[data-action="toggle-subtask"]');
+  if (checkbox) {
+    const id = checkbox.dataset.id;
+    const subId = checkbox.dataset.sub;
+    const task = page.tasks.find(t => t.id === id);
+    if (!task) return;
+    const sub = (task.subtasks || []).find(s => s.id === subId);
+    if (!sub) return;
+    sub.done = checkbox.checked;
+    saveData();
+    renderTasks();
+  }
+});
+
+listEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.classList.contains('subtask-input')) {
+    const id = e.target.dataset.id;
+    const btn = listEl.querySelector(`button[data-action="add-subtask"][data-id="${id}"]`);
+    if (btn) btn.click();
+  }
+});
+
+document.querySelectorAll('.filters button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderTasks();
+  });
+});
+
+document.getElementById('export-btn').addEventListener('click', exportToPdf);
+
+function exportToPdf() {
+  const errorEl = document.getElementById('export-error');
+  errorEl.textContent = '';
+  const fromVal = document.getElementById('export-from').value;
+  const toVal = document.getElementById('export-to').value;
+  const fromDate = fromVal ? new Date(fromVal + 'T00:00:00') : null;
+  const toDate = toVal ? new Date(toVal + 'T23:59:59') : null;
+
+  if (fromDate && toDate && fromDate > toDate) {
+    errorEl.textContent = '"From" date is after "To" date';
+    return;
+  }
+
+  function inRange(iso) {
+    if (!fromDate && !toDate) return true;
+    if (!iso) return true;
+    const d = new Date(iso);
+    if (fromDate && d < fromDate) return false;
+    if (toDate && d > toDate) return false;
+    return true;
+  }
+
+  let sections = '';
+  let totalTasks = 0;
+
+  data.pages.forEach(page => {
+    const tasks = (page.tasks || []).filter(t => inRange(t.createdAt));
+    if (tasks.length === 0) return;
+    totalTasks += tasks.length;
+    const taskRows = tasks.map(t => {
+      const cls = t.status === 'done' ? 'done' : t.status === 'removed' ? 'removed' : '';
+      const meta = t.status === 'done' && t.completedAt
+        ? `<div class="meta">Completed ${formatDate(t.completedAt)}</div>`
+        : t.status === 'removed' && t.removedAt
+          ? `<div class="meta">Removed ${formatDate(t.removedAt)}</div>`
+          : t.createdAt ? `<div class="meta">Created ${formatDate(t.createdAt)}</div>` : '';
+      const noteHtml = t.note ? `<div class="note">${escapeHtml(t.note)}</div>` : '';
+      const subtasksHtml = (t.subtasks || []).length
+        ? `<div class="subtask-list">${t.subtasks.map(s => `<div class="subtask${s.done ? ' done' : ''}">${s.done ? '[x]' : '[ ]'} ${escapeHtml(s.text)}</div>`).join('')}</div>`
+        : '';
+      return `<div class="task-block"><div class="task-text ${cls}">${escapeHtml(t.text)}</div>${meta}${noteHtml}${subtasksHtml}</div>`;
+    }).join('');
+    sections += `<h2>${escapeHtml(page.title || 'Untitled')}</h2>${taskRows}`;
+  });
+
+  if (totalTasks === 0) {
+    errorEl.textContent = 'No tasks found in that date range';
+    return;
+  }
+
+  const rangeLabel = (fromVal || toVal) ? `${fromVal || 'earliest'} to ${toVal || 'latest'}` : 'all dates';
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Task export</title><style>
+    body { font-family: -apple-system, Arial, sans-serif; padding: 2rem; color: #222; }
+    h1 { font-size: 20px; margin-bottom: 2px; }
+    .range { font-size: 12px; color: #777; margin-bottom: 1.5rem; }
+    h2 { font-size: 15px; margin-top: 1.75rem; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+    .task-block { margin: 10px 0; padding-bottom: 8px; border-bottom: 1px solid #eee; }
+    .task-text { font-size: 14px; }
+    .task-text.done { color: #3b6d11; text-decoration: line-through; }
+    .task-text.removed { color: #a32d2d; text-decoration: line-through; }
+    .meta { font-size: 11px; color: #888; margin-top: 2px; }
+    .note { font-size: 12px; color: #555; margin-top: 4px; white-space: pre-wrap; }
+    .subtask-list { margin-top: 4px; margin-left: 14px; }
+    .subtask { font-size: 12px; color: #444; }
+    .subtask.done { color: #3b6d11; text-decoration: line-through; }
+    @media print { body { padding: 0.5in; } }
+  </style></head><body>
+    <h1>Task export</h1>
+    <div class="range">Date range: ${escapeHtml(rangeLabel)}</div>
+    ${sections}
+  </body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) {
+    errorEl.textContent = 'Pop-up blocked. Allow pop-ups for this page and try again.';
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 300);
+}
+
+document.getElementById('backup-btn').addEventListener('click', () => {
+  const backupErrorEl = document.getElementById('backup-error');
+  backupErrorEl.textContent = '';
+  try {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `workspace-backup-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    backupErrorEl.textContent = 'Could not create backup file.';
+  }
+});
+
+document.getElementById('restore-btn').addEventListener('click', () => {
+  document.getElementById('restore-input').click();
+});
+
+document.getElementById('restore-input').addEventListener('change', e => {
+  const backupErrorEl = document.getElementById('backup-error');
+  backupErrorEl.textContent = '';
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!parsed || !Array.isArray(parsed.pages)) {
+        backupErrorEl.textContent = 'That file does not look like a valid backup.';
+        return;
+      }
+      const confirmed = confirm('This will replace all current pages and tasks with the backup. Continue?');
+      if (!confirmed) return;
+      data = parsed;
+      ensureDefaultPage();
+      saveData();
+      renderAll();
+    } catch (err) {
+      backupErrorEl.textContent = 'Could not read that file. Make sure it is a valid backup.';
+    }
+  };
+  reader.onerror = () => {
+    backupErrorEl.textContent = 'Could not read that file.';
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+loadData();
+</script>
+</body>
+</html>
